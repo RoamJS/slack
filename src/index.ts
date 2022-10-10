@@ -41,6 +41,18 @@ export default runExtension({
               }),
           },
         },
+        {
+          id: "user-format",
+          name: "User Format",
+          description: "The format tags should be in to be detected as eligible users to message in Slack",
+          action: {type: "input", placeholder: "@{username}"}
+        },
+        {
+          id: "channel-format",
+          name: "Channel Format",
+          description: "The format tags should be in to be detected as eligible channels to message in Slack",
+          action: {type: "input", placeholder: "#{channel}"}
+        }
       ],
     });
     createHashtagObserver({
@@ -81,6 +93,7 @@ export default runExtension({
               parent: newSpan,
               tag: r,
               blockUid,
+              args,
             });
           }
         }

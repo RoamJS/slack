@@ -13,7 +13,11 @@ import { WebClient } from "@slack/web-api";
 import getSettingValueFromTree from "roamjs-components/util/getSettingValueFromTree";
 import getOauth from "roamjs-components/util/getOauth";
 import { useOauthAccounts } from "roamjs-components/components/OauthSelect";
-import { RoamBasicNode, TreeNode } from "roamjs-components/types/native";
+import {
+  OnloadArgs,
+  RoamBasicNode,
+  TreeNode,
+} from "roamjs-components/types/native";
 import resolveRefs from "roamjs-components/dom/resolveRefs";
 import getPageTitleByBlockUid from "roamjs-components/queries/getPageTitleByBlockUid";
 import getTextByBlockUid from "roamjs-components/queries/getTextByBlockUid";
@@ -28,6 +32,7 @@ import getBasicTreeByParentUid from "roamjs-components/queries/getBasicTreeByPar
 type ContentProps = {
   tag: string;
   blockUid: string;
+  args: OnloadArgs;
 };
 
 type SlackMember = {
@@ -64,21 +69,7 @@ const getSettingMapFromTree = ({
   return value;
 };
 
-export const getUserFormat = (tree: TreeNode[]): string =>
-  getSettingValueFromTree({
-    tree,
-    key: "user format",
-    defaultValue: "@{username}",
-  });
-
-export const getChannelFormat = (tree: TreeNode[]): string =>
-  getSettingValueFromTree({
-    tree,
-    key: "channel format",
-    defaultValue: "#{channel}",
-  });
-
-export const getAliases = (tree: TreeNode[]): { [key: string]: string } =>
+export const getAliases = (): { [key: string]: string } =>
   getSettingMapFromTree({
     key: "aliases",
     tree: getBasicTreeByParentUid(getPageUidByPageTitle("roam/js/slack")),
@@ -129,7 +120,7 @@ const getChannels = async (token: string) => {
 
 const SlackContent: React.FunctionComponent<
   ContentProps & { close: () => void }
-> = ({ tag, close, blockUid }) => {
+> = ({ tag, close, blockUid, args }) => {
   const message = getTextByBlockUid(blockUid);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -146,25 +137,26 @@ const SlackContent: React.FunctionComponent<
     const tree = getFullTreeByParentUid(
       getPageUidByPageTitle("roam/js/slack")
     ).children;
-    const legacyToken = getSettingValueFromTree({ tree, key: "token" });
     const oauth = getOauth("slack", accountLabel);
-    const { token = legacyToken, user_token } = JSON.parse(oauth);
-    const userFormat = getUserFormat(tree);
-    const channelFormat = getChannelFormat(tree);
-    const aliases = getAliases(tree);
+    const { token, user_token } = JSON.parse(oauth);
+    const userFormat =
+      args.extensionAPI.settings.get("user-format") || "@{username}";
+    const channelFormat =
+      args.extensionAPI.settings.get("channel-format") || "#{channel}";
+    const aliases = getAliases();
     const aliasedName = aliases[tag]?.toUpperCase?.();
-    const realNameRegex = new RegExp(
-      userFormat.replace("{real name}", "(.*)"),
-      "i"
-    );
-    const usernameRegex = new RegExp(
-      userFormat.replace("{username}", "(.*)"),
-      "i"
-    );
-    const channelRegex = new RegExp(
-      channelFormat.replace("{channel}", "(.*)"),
-      "i"
-    );
+    const realNameRegex =
+      typeof userFormat === "string"
+        ? new RegExp(userFormat.replace("{real name}", "(.*)"), "i")
+        : /$^/;
+    const usernameRegex =
+      typeof userFormat === "string"
+        ? new RegExp(userFormat.replace("{username}", "(.*)"), "i")
+        : /$^/;
+    const channelRegex =
+      typeof channelFormat === "string"
+        ? new RegExp(channelFormat.replace("{channel}", "(.*)"), "i")
+        : /$^/;
     const findFunction = realNameRegex.test(tag)
       ? (m: SlackMember) =>
           m.real_name?.toUpperCase?.() ===
