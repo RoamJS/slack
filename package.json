@@ -1,0 +1,20 @@
+{
+  "name": "slack",
+  "version": "1.0.0",
+  "description": "Description for slack.",
+  "main": "./build/main.js",
+  "scripts": {
+    "prebuild:roam": "npm install",
+    "build:roam": "roamjs-scripts build --depot",
+    "dev:roam": "roamjs-scripts dev --depot",
+    "start": "roamjs-scripts dev"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "roamjs-scripts": "^0.23.12"
+  },
+  "dependencies": {
+    "@slack/web-api": "^6.4.0",
+    "roamjs-components": "^0.74.8"
+  }
+}
