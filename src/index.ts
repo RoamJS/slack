@@ -30,7 +30,7 @@ export default runExtension({
                 service: "slack",
                 getPopoutUrl: () =>
                   Promise.resolve(
-                    `https://slack.com/oauth/v2/authorize?client_id=${process.env.SLACK_CLIENT_ID}&scope=channels:read,chat:write,users:read,users:read.email&user_scope=chat:write&redirect_uri=https://roamjs.com/oauth?auth=true`
+                    `https://slack.com/oauth/v2/authorize?client_id=768085626834.1680821489381&scope=channels:read,chat:write,users:read,users:read.email&user_scope=chat:write&redirect_uri=https://roamjs.com/oauth?auth=true`
                   ),
                 getAuthData: (data: string) =>
                   apiPost({
