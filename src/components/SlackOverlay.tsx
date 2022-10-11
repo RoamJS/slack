@@ -9,16 +9,11 @@ import {
 import React, { useCallback, useState } from "react";
 import ReactDOM from "react-dom";
 import Slack from "../Slack_Mark.svg";
-import { WebClient } from "@slack/web-api";
-import getSettingValueFromTree from "roamjs-components/util/getSettingValueFromTree";
 import getOauth from "roamjs-components/util/getOauth";
 import { useOauthAccounts } from "roamjs-components/components/OauthSelect";
-import {
-  OnloadArgs,
-  RoamBasicNode,
-  TreeNode,
-} from "roamjs-components/types/native";
+import { OnloadArgs, RoamBasicNode } from "roamjs-components/types/native";
 import resolveRefs from "roamjs-components/dom/resolveRefs";
+import extractRef from "roamjs-components/util/extractRef";
 import getPageTitleByBlockUid from "roamjs-components/queries/getPageTitleByBlockUid";
 import getTextByBlockUid from "roamjs-components/queries/getTextByBlockUid";
 import getFullTreeByParentUid from "roamjs-components/queries/getFullTreeByParentUid";
@@ -28,6 +23,8 @@ import getDisplayNameByEmail from "roamjs-components/queries/getDisplayNameByEma
 import getParentTextByBlockUid from "roamjs-components/queries/getParentTextByBlockUid";
 import getParentTextByBlockUidAndTag from "roamjs-components/queries/getParentTextByBlockUidAndTag";
 import getBasicTreeByParentUid from "roamjs-components/queries/getBasicTreeByParentUid";
+import apiPost from "roamjs-components/util/apiPost";
+import apiGet from "roamjs-components/util/apiGet";
 
 type ContentProps = {
   tag: string;
@@ -69,11 +66,16 @@ const getSettingMapFromTree = ({
   return value;
 };
 
-export const getAliases = (): { [key: string]: string } =>
-  getSettingMapFromTree({
-    key: "aliases",
-    tree: getBasicTreeByParentUid(getPageUidByPageTitle("roam/js/slack")),
-  });
+export const getAliases = (args: OnloadArgs): { [key: string]: string } => {
+  const aliases = args.extensionAPI.settings.get("aliases");
+  if (typeof aliases !== "string") return {};
+  return Object.fromEntries(
+    getBasicTreeByParentUid(extractRef(aliases)).map((t) => [
+      t.text,
+      t.children[0]?.text,
+    ])
+  );
+};
 
 const getCurrentUserEmail = () => {
   const globalAppState = JSON.parse(
@@ -89,16 +91,28 @@ const getCurrentUserEmail = () => {
   }
   return "";
 };
-const web = new WebClient();
-delete web["axios"].defaults.headers["User-Agent"];
 
 const getUsers = async (token: string) => {
   const userSet = new Set<SlackMember>();
   let done = false;
   let cursor: string = undefined;
   while (!done) {
-    const response = await web.users.list({ token, cursor });
-    (response.members as SlackMember[]).forEach((m) => userSet.add(m));
+    const response = await apiGet<
+      | {
+          members: SlackMember[];
+          response_metadata: { next_cursor?: string };
+
+          ok: true;
+        }
+      | { ok: false; error: string }
+    >({
+      domain: "https://slack.com/api",
+      path: `users.list`,
+      anonymous: true,
+      data: cursor ? { cursor, token } : { token },
+    });
+    if (response.ok == false) return Promise.reject(new Error(response.error));
+    (response.members || []).forEach((m) => userSet.add(m));
     cursor = response.response_metadata?.next_cursor;
     done = !cursor;
   }
@@ -110,8 +124,21 @@ const getChannels = async (token: string) => {
   let done = false;
   let cursor: string = undefined;
   while (!done) {
-    const response = await web.conversations.list({ token, cursor });
-    (response.channels as SlackChannel[]).forEach((c) => channelSet.add(c));
+    const response = await apiGet<
+      | {
+          channels: SlackChannel[];
+          response_metadata: { next_cursor?: string };
+          ok: true;
+        }
+      | { ok: false; error: string }
+    >({
+      domain: "https://slack.com/api",
+      path: "conversations.list",
+      anonymous: true,
+      data: cursor ? { cursor, token } : { token },
+    });
+    if (response.ok == false) return Promise.reject(new Error(response.error));
+    (response.channels || []).forEach((c) => channelSet.add(c));
     cursor = response.response_metadata?.next_cursor;
     done = !cursor;
   }
@@ -143,7 +170,7 @@ const SlackContent: React.FunctionComponent<
       args.extensionAPI.settings.get("user-format") || "@{username}";
     const channelFormat =
       args.extensionAPI.settings.get("channel-format") || "#{channel}";
-    const aliases = getAliases();
+    const aliases = getAliases(args);
     const aliasedName = aliases[tag]?.toUpperCase?.();
     const realNameRegex =
       typeof userFormat === "string"
@@ -170,11 +197,8 @@ const SlackContent: React.FunctionComponent<
       ? (c: SlackChannel) =>
           c.name.toUpperCase() === tag.match(channelRegex)[1].toUpperCase()
       : () => false;
-    const contentFormat = getSettingValueFromTree({
-      tree,
-      key: "content format",
-      defaultValue: "{block}",
-    });
+    const contentFormat =
+      (args.extensionAPI.settings.get("content-format") as string) || "{block}";
     Promise.all([getUsers(token), getChannels(token)])
       .then(([members, channels]) => {
         const memberId = members.find(
@@ -185,8 +209,11 @@ const SlackContent: React.FunctionComponent<
         )?.id;
         const channel = memberId || channelId;
         if (channel) {
-          return web.chat
-            .postMessage({
+          return apiGet({
+            domain: "https://slack.com/api",
+            path: "chat.postMessage",
+            anonymous: true,
+            data: {
               channel,
               text: contentFormat
                 .replace(/{block}/gi, resolveRefs(message))
@@ -234,8 +261,8 @@ const SlackContent: React.FunctionComponent<
                     token: user_token,
                   }
                 : { token }),
-            })
-            .then(close);
+            },
+          }).then(close);
         } else {
           setLoading(false);
           setError(
@@ -247,7 +274,7 @@ const SlackContent: React.FunctionComponent<
       })
       .catch(({ error, message }) => {
         if (message?.endsWith?.("not_authed")) {
-          setError("Not logged in. Head to the roam/js/slack page to log in!");
+          setError("Not logged in. Head to the Roam Depot Settings to log in!");
         } else {
           setError(error || message);
         }

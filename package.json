@@ -6,8 +6,7 @@
   "scripts": {
     "prebuild:roam": "npm install",
     "build:roam": "roamjs-scripts build --depot",
-    "dev:roam": "roamjs-scripts dev --depot",
-    "start": "roamjs-scripts dev"
+    "start": "roamjs-scripts dev --depot"
   },
   "license": "MIT",
   "devDependencies": {
@@ -15,6 +14,6 @@
   },
   "dependencies": {
     "@slack/web-api": "^6.4.0",
-    "roamjs-components": "^0.74.8"
+    "roamjs-components": "^0.74.10"
   }
 }
