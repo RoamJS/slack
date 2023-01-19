@@ -197,8 +197,10 @@ const SlackContent: React.FunctionComponent<
       ? (c: SlackChannel) =>
           c.name.toUpperCase() === tag.match(channelRegex)[1].toUpperCase()
       : () => false;
-    const contentFormat =
+    const rawContentFormat =
       (args.extensionAPI.settings.get("content-format") as string) || "{block}";
+    const contentFormat =
+      getTextByBlockUid(extractRef(rawContentFormat)) || rawContentFormat;
     Promise.all([getUsers(token), getChannels(token)])
       .then(([members, channels]) => {
         const memberId = members.find(

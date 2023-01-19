@@ -2,7 +2,7 @@
 
 The Slack extension helps connect Roam to a Slack organization!
 
-# Setup 
+## Setup 
 Add the RoamJS Slack App to your workspace by navigating to your Roam Depot settings for Slack and clicking the `Login with Slack` button.
 
 Anytime you tag a person in a Roam block, a slack icon will render next to the tag. Clicking the icon and then clicking Send will send the contents of the block to the user matching the full name of the tag.
@@ -15,7 +15,7 @@ Will send the following message to David Vargas in slack:
 
 `Sent from Roam!`
 
-### Configuration
+## Configuration
 
 The Slack extension supports the following configuration options, found in the Roam Depot settings:
 
