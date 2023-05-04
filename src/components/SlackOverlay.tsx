@@ -11,7 +11,11 @@ import ReactDOM from "react-dom";
 import Slack from "../Slack_Mark.svg";
 import getOauth from "roamjs-components/util/getOauth";
 import { useOauthAccounts } from "roamjs-components/components/OauthSelect";
-import { OnloadArgs, RoamBasicNode } from "roamjs-components/types/native";
+import {
+  OnloadArgs,
+  PullBlock,
+  RoamBasicNode,
+} from "roamjs-components/types/native";
 import resolveRefs from "roamjs-components/dom/resolveRefs";
 import extractRef from "roamjs-components/util/extractRef";
 import getPageTitleByBlockUid from "roamjs-components/queries/getPageTitleByBlockUid";
@@ -23,8 +27,8 @@ import getDisplayNameByEmail from "roamjs-components/queries/getDisplayNameByEma
 import getParentTextByBlockUid from "roamjs-components/queries/getParentTextByBlockUid";
 import getParentTextByBlockUidAndTag from "roamjs-components/queries/getParentTextByBlockUidAndTag";
 import getBasicTreeByParentUid from "roamjs-components/queries/getBasicTreeByParentUid";
-import apiPost from "roamjs-components/util/apiPost";
 import apiGet from "roamjs-components/util/apiGet";
+import getCurrentUserUid from "roamjs-components/queries/getCurrentUserUid";
 
 type ContentProps = {
   tag: string;
@@ -47,24 +51,6 @@ type SlackChannel = {
 const aliasRegex = new RegExp(`\\[([^\\]]*)\\]\\(([^\\)]*)\\)`, "g");
 
 const toName = (s: SlackMember) => s.profile.display_name || s.name;
-
-const getSettingMapFromTree = ({
-  tree,
-  key,
-  defaultValue = {},
-}: {
-  tree: RoamBasicNode[];
-  key: string;
-  defaultValue?: { [key: string]: string };
-}) => {
-  const node = tree.find((s) => new RegExp(key, "i").test(s.text.trim()));
-  const value = node
-    ? Object.fromEntries(
-        node.children.map((s) => [s.text.trim(), s.children[0].text.trim()])
-      )
-    : defaultValue;
-  return value;
-};
 
 export const getAliases = (args: OnloadArgs): { [key: string]: string } => {
   const aliases = args.extensionAPI.settings.get("aliases");
@@ -254,6 +240,15 @@ const SlackContent: React.FunctionComponent<
                     ""
                   )}/page/${blockUid}`
                 )
+                .replace(/{sender}/gi, () => {
+                  const uid = getCurrentUserUid();
+                  const user = (
+                    window.roamAlphaAPI.data.fast.q(
+                      `[:find (pull ?p [:node/title]) :where [?u :user/uid "${uid}"] [?u :display/page ?p]]`
+                    ) as [PullBlock][]
+                  )[0]?.[0]?.[":node/title"];
+                  return user || "Anonymous";
+                })
                 .replace(aliasRegex, (_, alias, url) => `<${url}|${alias}>`),
               ...(asUser
                 ? {

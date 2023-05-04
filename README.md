@@ -38,3 +38,4 @@ The Slack extension supports the following configuration options, found in the R
       - `Ignore this block`
         - `Send to #[[@dvargas92495]]`
   - Use the placeholder `{link}` to replace with the link to the zoomed in block.
+  - Use the placeholder `{sender}` to replace with the username of the user who send the message.
