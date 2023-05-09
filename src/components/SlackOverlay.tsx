@@ -8,14 +8,10 @@ import {
 } from "@blueprintjs/core";
 import React, { useCallback, useState } from "react";
 import ReactDOM from "react-dom";
-import Slack from "../Slack_Mark.svg";
+import Slack from "./Slack_Mark";
 import getOauth from "roamjs-components/util/getOauth";
 import { useOauthAccounts } from "roamjs-components/components/OauthSelect";
-import {
-  OnloadArgs,
-  PullBlock,
-  RoamBasicNode,
-} from "roamjs-components/types/native";
+import { OnloadArgs, PullBlock } from "roamjs-components/types/native";
 import resolveRefs from "roamjs-components/dom/resolveRefs";
 import extractRef from "roamjs-components/util/extractRef";
 import getPageTitleByBlockUid from "roamjs-components/queries/getPageTitleByBlockUid";
@@ -78,57 +74,51 @@ const getCurrentUserEmail = () => {
   return "";
 };
 
-const getUsers = async (token: string) => {
-  const userSet = new Set<SlackMember>();
-  let done = false;
-  let cursor: string = undefined;
-  while (!done) {
-    const response = await apiGet<
-      | {
-          members: SlackMember[];
-          response_metadata: { next_cursor?: string };
+const getUsers = async (
+  token: string,
+  cursor?: string
+): Promise<SlackMember[]> => {
+  const response = await apiGet<
+    | {
+        members: SlackMember[];
+        response_metadata: { next_cursor?: string };
 
-          ok: true;
-        }
-      | { ok: false; error: string }
-    >({
-      domain: "https://slack.com/api",
-      path: `users.list`,
-      anonymous: true,
-      data: cursor ? { cursor, token } : { token },
-    });
-    if (response.ok == false) return Promise.reject(new Error(response.error));
-    (response.members || []).forEach((m) => userSet.add(m));
-    cursor = response.response_metadata?.next_cursor;
-    done = !cursor;
-  }
-  return Array.from(userSet);
+        ok: true;
+      }
+    | { ok: false; error: string }
+  >({
+    domain: "https://slack.com/api",
+    path: `users.list`,
+    anonymous: true,
+    data: cursor ? { cursor, token } : { token },
+  });
+  if (response.ok == false) return Promise.reject(new Error(response.error));
+  const next_cursor = response.response_metadata?.next_cursor;
+  if (!next_cursor) return response.members;
+  return response.members.concat(await getUsers(token, next_cursor));
 };
 
-const getChannels = async (token: string) => {
-  const channelSet = new Set<SlackChannel>();
-  let done = false;
-  let cursor: string = undefined;
-  while (!done) {
-    const response = await apiGet<
-      | {
-          channels: SlackChannel[];
-          response_metadata: { next_cursor?: string };
-          ok: true;
-        }
-      | { ok: false; error: string }
-    >({
-      domain: "https://slack.com/api",
-      path: "conversations.list",
-      anonymous: true,
-      data: cursor ? { cursor, token } : { token },
-    });
-    if (response.ok == false) return Promise.reject(new Error(response.error));
-    (response.channels || []).forEach((c) => channelSet.add(c));
-    cursor = response.response_metadata?.next_cursor;
-    done = !cursor;
-  }
-  return Array.from(channelSet);
+const getChannels = async (
+  token: string,
+  cursor?: string
+): Promise<SlackChannel[]> => {
+  const response = await apiGet<
+    | {
+        channels: SlackChannel[];
+        response_metadata: { next_cursor?: string };
+        ok: true;
+      }
+    | { ok: false; error: string }
+  >({
+    domain: "https://slack.com/api",
+    path: "conversations.list",
+    anonymous: true,
+    data: cursor ? { cursor, token } : { token },
+  });
+  if (response.ok == false) return Promise.reject(new Error(response.error));
+  const next_cursor = response.response_metadata?.next_cursor;
+  if (!next_cursor) return response.channels;
+  return response.channels.concat(await getChannels(token, next_cursor));
 };
 
 const SlackContent: React.FunctionComponent<
@@ -173,15 +163,15 @@ const SlackContent: React.FunctionComponent<
     const findFunction = realNameRegex.test(tag)
       ? (m: SlackMember) =>
           m.real_name?.toUpperCase?.() ===
-          tag.match(realNameRegex)[1]?.toUpperCase?.()
+          tag.match(realNameRegex)?.[1]?.toUpperCase?.()
       : usernameRegex.test(tag)
       ? (m: SlackMember) =>
           toName(m)?.toUpperCase() ===
-          tag.match(usernameRegex)[1]?.toUpperCase()
+          tag.match(usernameRegex)?.[1]?.toUpperCase()
       : () => false;
     const channelFindFunction = channelRegex.test(tag)
       ? (c: SlackChannel) =>
-          c.name.toUpperCase() === tag.match(channelRegex)[1].toUpperCase()
+          c.name.toUpperCase() === tag.match(channelRegex)?.[1].toUpperCase()
       : () => false;
     const rawContentFormat =
       (args.extensionAPI.settings.get("content-format") as string) || "{block}";
@@ -303,17 +293,7 @@ const SlackOverlay: React.FunctionComponent<ContentProps> = (props) => {
   const close = useCallback(() => setIsOpen(false), [setIsOpen]);
   return (
     <Popover
-      target={
-        <Icon
-          icon={
-            <Slack
-              viewBox="70 70 130 130"
-              style={{ width: 15, marginLeft: 4 }}
-            />
-          }
-          onClick={open}
-        />
-      }
+      target={<Icon icon={<Slack />} onClick={open} />}
       content={<SlackContent {...props} close={close} />}
       isOpen={isOpen}
       onInteraction={setIsOpen}

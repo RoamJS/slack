@@ -2,20 +2,13 @@ import runExtension from "roamjs-components/util/runExtension";
 import React from "react";
 import OauthPanel from "roamjs-components/components/OauthPanel";
 import apiPost from "roamjs-components/util/apiPost";
-import Slack from "./Slack_Mark.svg";
+import Slack from "./components/Slack_Mark";
 import { getAliases, render } from "./components/SlackOverlay";
 import createHashtagObserver from "roamjs-components/dom/createHashtagObserver";
 import getUids from "roamjs-components/dom/getUids";
-import migrateLegacySettings from "roamjs-components/util/migrateLegacySettings";
 
 export default runExtension({
   run: (args) => {
-    migrateLegacySettings({
-      extensionAPI: args.extensionAPI,
-      specialKeys: {
-        aliases: (n) => [{ key: "aliases", value: n.uid }],
-      },
-    });
     args.extensionAPI.settings.panel.create({
       tabTitle: "Slack",
       settings: [
@@ -95,6 +88,7 @@ export default runExtension({
             : /$^/;
         const aliasKeys = new Set(Object.keys(getAliases(args)));
         const r = s.getAttribute("data-tag");
+        if (!r) return;
         if (
           aliasKeys.size
             ? aliasKeys.has(r) ||
