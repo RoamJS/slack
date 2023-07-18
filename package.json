@@ -1,6 +1,6 @@
 {
   "name": "slack",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "The Slack extension helps connect Roam to a Slack organization!",
   "main": "./build/main.js",
   "scripts": {
