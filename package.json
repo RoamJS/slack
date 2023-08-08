@@ -1,6 +1,6 @@
 {
   "name": "slack",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "The Slack extension helps connect Roam to a Slack organization!",
   "main": "./build/main.js",
   "scripts": {
@@ -13,6 +13,6 @@
     "extends": "node_modules/roamjs-components/package.json"
   },
   "dependencies": {
-    "roamjs-components": "^0.77.25"
+    "roamjs-components": "^0.82.0"
   }
 }
