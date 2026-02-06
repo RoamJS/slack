@@ -1,6 +1,12 @@
+<a href="https://roamjs.com/">
+    <img src="https://avatars.githubusercontent.com/u/138642184" alt="RoamJS Logo" title="RoamJS" align="right" height="60" />
+</a>
+
 # Slack
 
-The Slack extension helps connect Roam to a Slack organization!
+**Bring Slack into your Roam workflow. Turn tagged people and channels into one-click message targets, and send perfectly formatted snippets (with context and links) from your graph to Slack—great for collaboration, handoffs, and async updates.**
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/RoamJS/slack)
 
 ## Setup 
 Add the RoamJS Slack App to your workspace by navigating to your Roam Depot settings for Slack and clicking the `Login with Slack` button.
