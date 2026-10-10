@@ -6,7 +6,7 @@
 
 **Bring Slack into your Roam workflow. Turn tagged people and channels into one-click message targets, and send perfectly formatted snippets (with context and links) from your graph to Slack—great for collaboration, handoffs, and async updates.**
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/RoamJS/slack)
+[![RoamJS](https://roamjs.com/badges/website.svg)](https://roamjs.com/) [![DeepWiki](https://roamjs.com/badges/deepwiki.svg)](https://deepwiki.com/RoamJS/slack) [![Slack](https://roamjs.com/badges/slack.svg)](https://roamresearch.slack.com/archives/C016N2B66JU)
 
 ## Setup
 
